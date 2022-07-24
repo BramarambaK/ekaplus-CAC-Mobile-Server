@@ -1,0 +1,79 @@
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee 
+	http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+
+	<display-name>CAC Mobile App</display-name>
+	<description>Commodity Analytics Cloud Mobile Application</description>
+	
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/cac-mobile-web-context.xml</param-value>
+	</context-param>
+
+	<!-- For web context -->
+	<servlet>
+		<servlet-name>mobileServerServlet</servlet-name>
+		<servlet-class>
+			org.springframework.web.servlet.DispatcherServlet
+		</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value></param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>mobileServerServlet</servlet-name>
+		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
+
+	<!-- For root context -->
+	<listener>
+		<listener-class>
+			org.springframework.web.context.ContextLoaderListener
+		</listener-class>
+	</listener>
+	
+	<listener>
+	    <listener-class>
+	        org.springframework.web.context.request.RequestContextListener
+	    </listener-class>
+	</listener>
+
+
+	<!-- Allowing Cross-Origin Access for only EKA Domain APIs by default -->
+	
+ 	<filter>
+    <filter-name>CORSFilter</filter-name>
+    <filter-class>com.ekaanalytics.filter.CORSFilter</filter-class>
+    <init-param>            
+            <param-name>EXCLUDED_ORIGINS</param-name>                 
+            <param-value>file://</param-value>                
+        </init-param>
+	</filter>
+	<filter-mapping>
+    <filter-name>CORSFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+	</filter-mapping>
+
+
+	
+	<filter>
+		<filter-name>MultipartFilter</filter-name>
+		<filter-class>org.springframework.web.multipart.support.MultipartFilter</filter-class>
+		<init-param>
+			<param-name>multipartResolverBeanName</param-name>
+			<param-value>filterMultipartResolver</param-value>
+		</init-param>
+	</filter>
+	<filter-mapping>
+		<filter-name>MultipartFilter</filter-name>
+		<servlet-name>/*</servlet-name>
+	</filter-mapping>
+	
+	
+
+
+</web-app>

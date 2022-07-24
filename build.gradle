@@ -1,0 +1,133 @@
+apply plugin: 'war'
+apply plugin: 'maven-publish'
+archivesBaseName = 'cac-mobile'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+ext {
+	groupId = "$GROUP_ID"
+	appVersion = "$VERSION"
+	warVersion = "$CORE_WAR_VERSION"
+	NEXUS_URL = "$NEXUS_URL"
+	DEPLOY_DIR="$JETTY_HOME/$JETTY_DEPLOY_DIR"
+	WAR_DIR="$JETTY_HOME/$JETTY_DEPLOY_DIR/$FINAL_WAR_ARCHIVE_NAME"
+	
+	WEBAPP_DIR="$JETTY_HOME/$JETTY_WEBAPP_DIR"
+}
+
+group = groupId
+version = appVersion
+war {
+    zip64 = true 
+    webAppDirName = 'src/main/web'
+}
+
+configurations
+{
+	compile.exclude module: 'FEAIntegration'
+        compile.exclude module: 'RiskAPI_Enterprise'
+}
+
+task buildCACMobileWar(type:War){
+println 'building...'
+	zip64 = true 		   
+}
+
+defaultTasks 'clean', 'buildCACMobileWar', 'copyCACMobileWar', 'copyCACMobileJettyWebDescriptor'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+
+	compile 'org.springframework:spring-webmvc:4.3.8.RELEASE',
+		    'org.springframework:spring-orm:4.3.8.RELEASE',
+    		'org.springframework.security:spring-security-jwt:1.0.0.RELEASE',
+			'javax.servlet:jstl:1.2',
+		    'javax.servlet:javax.servlet-api:3.0.1',
+		    'org.apache.commons:commons-lang3:3.0',
+		    'org.slf4j:slf4j-api:1.7.21'
+    
+	compile group: 'org.json', name: 'json', version: '20190722'
+	compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.3.4'
+	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.12.6.1'
+	compile group: 'com.googlecode.json-simple', name: 'json-simple', version: '1.1'
+	compile group: 'commons-fileupload', name: 'commons-fileupload', version: '1.3.3'
+	
+   compile group: 'org.owasp.esapi', name: 'esapi', version: '2.2.3.1', {
+    	exclude group: 'xerces', module: 'xercesImpl'
+		exclude group: 'log4j', module: 'log4j'
+    }
+    
+    testCompile 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.owasp:dependency-check-gradle:1.4.5'
+    } 
+}
+
+apply plugin: 'org.owasp.dependencycheck'
+
+buildCACMobileWar.doLast { 
+
+	println 'Creating Exploded war...'
+	ant.unzip(src: war.archivePath, dest: "$buildDir/libs/exploded") 
+} 
+
+task copyCACMobileWar << {
+
+    delete project.WAR_DIR
+	
+	println 'Copying core components to server'
+	def explodePath =  'build/libs/exploded'
+	
+	copy {
+		from explodePath
+		into project.WAR_DIR
+	}	
+}
+
+task copyCACMobileJettyWebDescriptor(type:Copy){
+ 	from('./server-conf/')
+ 	into project.ext.WEBAPP_DIR
+}
+
+task publishAppWar(type: War) 
+
+publishing {
+    
+    publications {        
+        implWeb(MavenPublication){
+			artifactId archivesBaseName
+            from components.java    
+            artifact publishAppWar    
+        }
+    }    
+    repositories {                    
+        maven {
+            url project.ext.NEXUS_URL
+            credentials {
+                 username = 'admin'
+                 password = 'admin123'
+            }
+        }
+    }
+}
+
+
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"}}
+  dependencies {
+    classpath "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.3"}}
+apply plugin: "org.sonarqube"
